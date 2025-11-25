@@ -19,57 +19,70 @@ app.get('/', (req, res) => {
   });
 });
 
-// User registration
+/// User registration - FIXED: Store password
 app.post('/api/register', (req, res) => {
+  const { name, email, phone, password } = req.body;
+  
+  // Check if user already exists
+  if (users.find(u => u.email === email)) {
+    return res.json({ 
+      success: false, 
+      error: 'User already exists with this email' 
+    });
+  }
+  
   const user = {
     id: Date.now(),
-    name: req.body.name,
-    email: req.body.email,
-    phone: req.body.phone,
+    name: name,
+    email: email,
+    phone: phone,
+    password: password, // ✅ STORE PASSWORD
     ip: req.ip,
     timestamp: new Date().toISOString()
   };
   users.push(user);
-  res.json({ success: true, message: 'User registered' });
+  
+  console.log('✅ New user registered:', email);
+  res.json({ success: true, message: 'User registered successfully' });
 });
 
-// PROPER LOGIN VALIDATION
+// User login - FIXED: Validate password
 app.post('/api/login', (req, res) => {
-    const { email, password } = req.body;
-    
-    console.log('Login attempt:', email);
-    
-    // Find user by email
-    const user = users.find(u => u.email === email);
-    
-    if (!user) {
-        console.log('User not found:', email);
-        return res.json({ 
-            success: false, 
-            error: 'User not found. Please register first.' 
-        });
-    }
-    
-    // Simple password check (in real app, use bcrypt)
-    if (user.password !== password) {
-        console.log('Invalid password for:', email);
-        return res.json({ 
-            success: false, 
-            error: 'Invalid password' 
-        });
-    }
-    
-    console.log('Login successful:', email);
-    res.json({ 
-        success: true, 
-        message: 'Login successful',
-        user: {
-            id: user.id,
-            name: user.name,
-            email: user.email
-        }
+  const { email, password } = req.body;
+  
+  console.log('🔐 Login attempt:', email);
+  
+  // Find user by email
+  const user = users.find(u => u.email === email);
+  
+  if (!user) {
+    console.log('❌ User not found:', email);
+    return res.json({ 
+      success: false, 
+      error: 'User not found. Please register first.' 
     });
-})
+  }
+  
+  // Check password
+  if (user.password !== password) {
+    console.log('❌ Invalid password for:', email);
+    return res.json({ 
+      success: false, 
+      error: 'Invalid password' 
+    });
+  }
+  
+  console.log('✅ Login successful:', email);
+  res.json({ 
+    success: true, 
+    message: 'Login successful',
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email
+    }
+  });
+});
 
 // Transaction
 app.post('/api/transaction', (req, res) => {
@@ -242,4 +255,5 @@ app.listen(PORT, () => {
   console.log(`🛡️ Admin Login: username="admin", password="admin123"`);
   console.log(`✅ Transaction Status Update: PUT /api/admin/transactions/:id/status`);
 });
+
 
