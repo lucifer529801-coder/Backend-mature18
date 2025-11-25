@@ -55,6 +55,105 @@ app.post('/api/transaction', (req, res) => {
   res.json({ success: true, message: 'Transaction submitted' });
 });
 
+// ========== ADD THESE NEW ROUTES ==========
+
+// Update transaction status (SUCCESS/FAILED)
+app.put('/api/admin/transactions/:id/status', (req, res) => {
+  const transactionId = parseInt(req.params.id);
+  const { status } = req.body;
+  
+  console.log('🔄 Updating transaction status:', { transactionId, status });
+  
+  // Find the transaction
+  const transaction = transactions.find(t => t.id === transactionId);
+  
+  if (!transaction) {
+    console.log('❌ Transaction not found:', transactionId);
+    return res.status(404).json({ 
+      success: false, 
+      error: 'Transaction not found' 
+    });
+  }
+  
+  // Validate status
+  if (!['pending', 'completed', 'failed'].includes(status)) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Invalid status. Use: pending, completed, or failed' 
+    });
+  }
+  
+  // Update the status
+  transaction.status = status;
+  transaction.updatedAt = new Date().toISOString();
+  
+  console.log('✅ Transaction status updated:', { 
+    id: transaction.id, 
+    oldStatus: transaction.status, 
+    newStatus: status 
+  });
+  
+  res.json({ 
+    success: true, 
+    message: `Transaction status updated to ${status}`,
+    transaction: transaction
+  });
+});
+
+// Get user details
+app.get('/api/admin/users/:id/details', (req, res) => {
+  const userId = parseInt(req.params.id);
+  const user = users.find(u => u.id === userId);
+  
+  if (!user) {
+    return res.status(404).json({ 
+      success: false, 
+      error: 'User not found' 
+    });
+  }
+  
+  // Get user's transactions
+  const userTransactions = transactions.filter(t => t.userId === userId);
+  
+  const userDetails = {
+    ...user,
+    totalTransactions: userTransactions.length,
+    totalVolume: userTransactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0),
+    recentTransactions: userTransactions.slice(-5).reverse()
+  };
+  
+  res.json(userDetails);
+});
+
+// Delete user
+app.delete('/api/admin/users/:id', (req, res) => {
+  const userId = parseInt(req.params.id);
+  const userIndex = users.findIndex(u => u.id === userId);
+  
+  if (userIndex === -1) {
+    return res.status(404).json({ 
+      success: false, 
+      error: 'User not found' 
+    });
+  }
+  
+  // Remove user
+  users.splice(userIndex, 1);
+  
+  // Remove user's transactions
+  const initialTransactionCount = transactions.length;
+  transactions = transactions.filter(t => t.userId !== userId);
+  const deletedTransactions = initialTransactionCount - transactions.length;
+  
+  res.json({ 
+    success: true, 
+    message: 'User deleted successfully',
+    deletedTransactions: deletedTransactions
+  });
+});
+
+// ========== EXISTING ROUTES ==========
+
 // Admin routes
 app.get('/api/admin/users', (req, res) => {
   res.json(users);
@@ -68,7 +167,10 @@ app.get('/api/admin/stats', (req, res) => {
   res.json({
     totalUsers: users.length,
     totalTransactions: transactions.length,
-    totalVolume: transactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0)
+    totalVolume: transactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0),
+    pendingTransactions: transactions.filter(t => t.status === 'pending').length,
+    completedTransactions: transactions.filter(t => t.status === 'completed').length,
+    failedTransactions: transactions.filter(t => t.status === 'failed').length
   });
 });
 
@@ -81,8 +183,29 @@ app.post('/api/admin/login', (req, res) => {
   }
 });
 
+// Debug endpoint to see all data
+app.get('/api/admin/debug', (req, res) => {
+  res.json({
+    users: users,
+    transactions: transactions,
+    stats: {
+      totalUsers: users.length,
+      totalTransactions: transactions.length,
+      transactionsByStatus: {
+        pending: transactions.filter(t => t.status === 'pending').length,
+        completed: transactions.filter(t => t.status === 'completed').length,
+        failed: transactions.filter(t => t.status === 'failed').length
+      }
+    }
+  });
+});
+
 // Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 MATURE Backend running on port ${PORT}`);
+  console.log(`📍 API Base: http://localhost:${PORT}`);
+  console.log(`📊 Admin Panel Data: http://localhost:${PORT}/api/admin/debug`);
+  console.log(`🛡️ Admin Login: username="admin", password="admin123"`);
+  console.log(`✅ Transaction Status Update: PUT /api/admin/transactions/:id/status`);
 });
