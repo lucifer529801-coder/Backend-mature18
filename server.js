@@ -101,6 +101,7 @@ app.post('/api/transaction', (req, res) => {
   res.json({ success: true, message: 'Transaction submitted' });
 });
 
+
 // ========== ADD THESE NEW ROUTES ==========
 
 // Update transaction status (SUCCESS/FAILED)
@@ -128,6 +129,19 @@ app.put('/api/admin/transactions/:id/status', (req, res) => {
       error: 'Invalid status. Use: pending, completed, or failed' 
     });
   }
+
+  // Debug route to see registered users
+app.get('/api/debug/users', (req, res) => {
+  res.json({
+    totalUsers: users.length,
+    users: users.map(u => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      hasPassword: !!u.password
+    }))
+  });
+});
   
   // Update the status
   transaction.status = status;
@@ -255,5 +269,6 @@ app.listen(PORT, () => {
   console.log(`🛡️ Admin Login: username="admin", password="admin123"`);
   console.log(`✅ Transaction Status Update: PUT /api/admin/transactions/:id/status`);
 });
+
 
 
