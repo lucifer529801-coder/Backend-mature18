@@ -33,10 +33,43 @@ app.post('/api/register', (req, res) => {
   res.json({ success: true, message: 'User registered' });
 });
 
-// User login
+// PROPER LOGIN VALIDATION
 app.post('/api/login', (req, res) => {
-  res.json({ success: true, message: 'Login successful' });
-});
+    const { email, password } = req.body;
+    
+    console.log('Login attempt:', email);
+    
+    // Find user by email
+    const user = users.find(u => u.email === email);
+    
+    if (!user) {
+        console.log('User not found:', email);
+        return res.json({ 
+            success: false, 
+            error: 'User not found. Please register first.' 
+        });
+    }
+    
+    // Simple password check (in real app, use bcrypt)
+    if (user.password !== password) {
+        console.log('Invalid password for:', email);
+        return res.json({ 
+            success: false, 
+            error: 'Invalid password' 
+        });
+    }
+    
+    console.log('Login successful:', email);
+    res.json({ 
+        success: true, 
+        message: 'Login successful',
+        user: {
+            id: user.id,
+            name: user.name,
+            email: user.email
+        }
+    });
+})
 
 // Transaction
 app.post('/api/transaction', (req, res) => {
@@ -209,3 +242,4 @@ app.listen(PORT, () => {
   console.log(`🛡️ Admin Login: username="admin", password="admin123"`);
   console.log(`✅ Transaction Status Update: PUT /api/admin/transactions/:id/status`);
 });
+
