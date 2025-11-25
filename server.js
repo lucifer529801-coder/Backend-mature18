@@ -1,40 +1,36 @@
 const express = require('express');
+const cors = require('cors');
 const app = express();
 
 // Enable CORS and JSON
-app.use(require('cors')());
+app.use(cors());
 app.use(express.json());
 
 // Data storage
 let users = [];
 let transactions = [];
 
-// ==================== ROUTES ====================
-
-// Root route - SIMPLE
+// Root route
 app.get('/', (req, res) => {
   res.json({ 
     status: 'OK', 
-    message: 'MATURE Backend is LIVE!',
+    message: 'MATURE Backend is LIVE! 🚀',
     time: new Date().toISOString()
   });
-});
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'healthy' });
 });
 
 // User registration
 app.post('/api/register', (req, res) => {
   const user = {
     id: Date.now(),
-    ...req.body,
+    name: req.body.name,
+    email: req.body.email,
+    phone: req.body.phone,
     ip: req.ip,
     timestamp: new Date().toISOString()
   };
   users.push(user);
-  res.json({ success: true, message: 'Registered' });
+  res.json({ success: true, message: 'User registered' });
 });
 
 // User login
@@ -46,9 +42,14 @@ app.post('/api/login', (req, res) => {
 app.post('/api/transaction', (req, res) => {
   const transaction = {
     id: Date.now(),
-    ...req.body,
+    userId: req.body.userId,
+    amount: req.body.amount,
+    country: req.body.country,
+    bankDetails: req.body.bankDetails,
+    paymentMethod: req.body.paymentMethod,
     ip: req.ip,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    status: 'pending'
   };
   transactions.push(transaction);
   res.json({ success: true, message: 'Transaction submitted' });
@@ -80,17 +81,8 @@ app.post('/api/admin/login', (req, res) => {
   }
 });
 
-// Catch-all route
-app.get('*', (req, res) => {
-  res.json({ 
-    error: 'Route not found: ' + req.path,
-    try: '/',
-    available: ['/', '/health', '/api/register', '/api/admin/users']
-  });
-});
-
 // Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 MATURE Backend running on port ${PORT}`);
 });
